@@ -2,16 +2,23 @@ package com.abhidutta.model;
 
 import java.time.LocalDate;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 
 import lombok.Data;
 
 @Entity
 @Data
 public class User {
+	@Id
+	@GeneratedValue
+	private Integer id;
+	@Column(unique = true, nullable = false)
+	private String email;
 	private String firstName;
 	private String lastName;
-	private String email;
 	private Long phone;
 	private LocalDate dob;
 	private String gender;
