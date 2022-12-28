@@ -1,17 +1,27 @@
 package com.abhidutta.service;
 
+import java.util.Map;
+
+import com.abhidutta.dto.LoginForm;
+import com.abhidutta.dto.UnlockAccForm;
 import com.abhidutta.model.User;
 
 public interface UserService {
-	public String signIn(User user);
-	
-	public String uniqueEmailOrNot(String email);
+
+	public boolean isEmailExist(String email);
+
+	public Map<Integer, String> getCountries();
+
+	public Map<Integer, String> getStates(Integer countryId);
+
+	public Map<Integer, String> getCities(Integer stateId);
 
 	public String registerUser(User user);
 
-	public String linkToUnlockAccount(String email);
+	public String unlockAccount(UnlockAccForm accForm);
 
-	public String unlockAccount(User user);
+	public String login(LoginForm loginForm);
 
-	public String forgetPassword(String email);
+	public String forgotPwd(String email);
+
 }

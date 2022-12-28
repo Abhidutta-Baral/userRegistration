@@ -11,7 +11,6 @@ import lombok.Data;
 public class Country {
 	@Id
 	@GeneratedValue
-	private Integer id;
-	private String countryId;
+	private Integer countryId;
 	private String countryName;
 }

@@ -14,7 +14,7 @@ import lombok.Data;
 public class User {
 	@Id
 	@GeneratedValue
-	private Integer id;
+	private Integer userId;
 	@Column(unique = true, nullable = false)
 	private String email;
 	private String firstName;
@@ -27,6 +27,4 @@ public class User {
 	private String city;
 	private boolean isLocked;
 	private String password;
-	private String newPassword;
-	private String confirmPassword;
 }
