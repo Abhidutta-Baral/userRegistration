@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,31 +53,42 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public Map<Integer, String> getCountries() {
-		Map<Integer, String> countriesMap = new HashMap<>();
+		// Map<Integer, String> countriesMap = new HashMap<>();
 		List<Country> countriesList = countryRepository.findAll();
-		for (Country c : countriesList) {
-			countriesMap.put(c.getCountryId(), c.getCountryName());
-		}
+		/*
+		 * for (Country c : countriesList) { countriesMap.put(c.getCountryId(),
+		 * c.getCountryName()); }
+		 */
+		Map<Integer, String> countriesMap = countriesList.stream()
+				.collect(Collectors.toMap(Country::getCountryId, Country::getCountryName));
 		return countriesMap;
 	}
 
 	@Override
 	public Map<Integer, String> getStates(Integer countryId) {
-		Map<Integer, String> statesMap = new HashMap<>();
+		// Map<Integer, String> statesMap = new HashMap<>();
 		List<State> statesList = stateRepository.findByCountryId(countryId);
-		for (State s : statesList) {
-			statesMap.put(s.getStateId(), s.getStateName());
-		}
+		/*
+		 * for (State s : statesList) { statesMap.put(s.getStateId(), s.getStateName());
+		 * }
+		 */
+
+		Map<Integer, String> statesMap = statesList.stream()
+				.collect(Collectors.toMap(State::getStateId, State::getStateName));
 		return statesMap;
 	}
 
 	@Override
 	public Map<Integer, String> getCities(Integer stateId) {
-		Map<Integer, String> citiesMap = new HashMap<>();
+		// Map<Integer, String> citiesMap = new HashMap<>();
 		List<City> citiesList = cityRepository.findByStateId(stateId);
-		for (City ct : citiesList) {
-			citiesMap.put(ct.getCityId(), ct.getCityName());
-		}
+
+		/*
+		 * for (City ct : citiesList) { citiesMap.put(ct.getCityId(), ct.getCityName());
+		 * }
+		 */
+		Map<Integer, String> citiesMap = citiesList.stream()
+				.collect(Collectors.toMap(City::getCityId, City::getCityName));
 		return citiesMap;
 	}
 
