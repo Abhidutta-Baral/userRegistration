@@ -150,7 +150,7 @@ public class UserServiceImpl implements UserService {
 				emailDetails.setToDetails(email);
 				String sendSimpleMail = emailUtils.sendSimpleMail(emailDetails);
 				if (sendSimpleMail.equals("Success")) {
-					forgotPwdMsg = "Please check your email reset Password";
+					forgotPwdMsg = "Please check your email to reset Password";
 				}
 			}
 
