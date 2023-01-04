@@ -1,11 +1,17 @@
 package com.abhidutta.service.impl;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +32,7 @@ import com.abhidutta.repo.EmailRepository;
 import com.abhidutta.repo.StateRepository;
 import com.abhidutta.repo.UserRepository;
 import com.abhidutta.service.UserService;
+import com.abhidutta.util.EmailUtils;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -39,9 +46,7 @@ public class UserServiceImpl implements UserService {
 	@Autowired
 	private CityRepository cityRepository;
 	@Autowired
-	private EmailRepository emailRepository;
-	@Autowired
-	private JavaMailSender javaMailSender;
+	private EmailUtils emailUtils;
 
 	@Value("${spring.mail.username}")
 	private String sender;
@@ -53,12 +58,7 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public Map<Integer, String> getCountries() {
-		// Map<Integer, String> countriesMap = new HashMap<>();
 		List<Country> countriesList = countryRepository.findAll();
-		/*
-		 * for (Country c : countriesList) { countriesMap.put(c.getCountryId(),
-		 * c.getCountryName()); }
-		 */
 		Map<Integer, String> countriesMap = countriesList.stream()
 				.collect(Collectors.toMap(Country::getCountryId, Country::getCountryName));
 		return countriesMap;
@@ -66,13 +66,7 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public Map<Integer, String> getStates(Integer countryId) {
-		// Map<Integer, String> statesMap = new HashMap<>();
-		List<State> statesList = stateRepository.findByCountryId(countryId);
-		/*
-		 * for (State s : statesList) { statesMap.put(s.getStateId(), s.getStateName());
-		 * }
-		 */
-
+		List<State> statesList = stateRepository.findByCountryId(String.valueOf(countryId));
 		Map<Integer, String> statesMap = statesList.stream()
 				.collect(Collectors.toMap(State::getStateId, State::getStateName));
 		return statesMap;
@@ -80,13 +74,7 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public Map<Integer, String> getCities(Integer stateId) {
-		// Map<Integer, String> citiesMap = new HashMap<>();
-		List<City> citiesList = cityRepository.findByStateId(stateId);
-
-		/*
-		 * for (City ct : citiesList) { citiesMap.put(ct.getCityId(), ct.getCityName());
-		 * }
-		 */
+		List<City> citiesList = cityRepository.findByStateId(String.valueOf(stateId));
 		Map<Integer, String> citiesMap = citiesList.stream()
 				.collect(Collectors.toMap(City::getCityId, City::getCityName));
 		return citiesMap;
@@ -97,16 +85,16 @@ public class UserServiceImpl implements UserService {
 		String registerMsg = "";
 		user.setPassword(generateRandomPassword());
 		user.setLocked(true);
+
 		User userData = userRepository.save(user);
 		if (userData.getUserId() != null) {
 			EmailDetails emailDetails = new EmailDetails();
 			emailDetails.setFromDetails(sender);
-			String msgBody = "Your Temp Password is-" + userData.getPassword();
-			emailDetails.setMsgBody(msgBody);
+			String body = readEmailBody("user_reg_email_format.txt", user);
+			emailDetails.setMsgBody(body);
 			emailDetails.setSubject("Unlock IES Account");
 			emailDetails.setToDetails(userData.getEmail());
-			emailRepository.save(emailDetails);
-			String sendSimpleMail = sendSimpleMail(emailDetails);
+			String sendSimpleMail = emailUtils.sendSimpleMail(emailDetails);
 			if (sendSimpleMail.equals("Success")) {
 				registerMsg = "Please check your email to unlock account";
 			}
@@ -116,54 +104,34 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public String unlockAccount(UnlockAccForm accForm) {
-		String unlockAccountMsg = "";
 		String tempPass = accForm.getTempPass();
 		String email = accForm.getEmail();
-		String newPass = accForm.getNewPass();
 		Optional<User> userDetails = userRepository.findByEmail(email);
 		User user = userDetails.get();
 
-		if (userDetails.isPresent()) {
-			if (user.getPassword().equals(tempPass)) {
-				user.setPassword(newPass);
-				user.setLocked(false);
-				;
-				userRepository.save(user);
-				unlockAccountMsg = "Account unlocked, please proceed with login";
-			} else {
-				unlockAccountMsg = "Invalid Credentials";
-			}
-		} else {
-			unlockAccountMsg = "Invalid Credentials";
+		if (user != null && user.getPassword().equals(tempPass)) {
+			user.setPassword(accForm.getNewPass());
+			user.setLocked(false);
+			userRepository.save(user);
+			return "Account unlocked, please proceed with login";
 		}
 
-		return unlockAccountMsg;
+		return "Invalid Credentials";
 	}
 
 	@Override
 	public String login(LoginForm loginForm) {
-		String logInMsg = "";
 		String email = loginForm.getEmail();
 		String password = loginForm.getPassword();
 
-		Optional<User> userDetails = userRepository.findByEmail(email);
-
-		if (userDetails.isPresent()) {
-			User user = userDetails.get();
-			if (user.getEmail().equals(email) && user.getPassword().equals(password)) {
-				if (!user.isLocked()) {
-					logInMsg = "Valid Credentials";
-				}
-			} else {
-				logInMsg = "‘Your Account Is Locked";
-			}
-
-		} else {
-			logInMsg = "Invalid Credentials";
-
+		Optional<User> userDetails = userRepository.findByEmailAndPassword(email, password);
+		if (!userDetails.isPresent()) {
+			return "Invalid Credentials";
 		}
-
-		return logInMsg;
+		if (userDetails.get().isLocked()) {
+			return "Your Account Is Locked";
+		}
+		return "Valid Credentials";
 	}
 
 	@Override
@@ -176,12 +144,11 @@ public class UserServiceImpl implements UserService {
 			if (userDetails.isPresent()) {
 				EmailDetails emailDetails = new EmailDetails();
 				emailDetails.setFromDetails(sender);
-				String msgBody = "Your Password is-" + user.getPassword();
-				emailDetails.setMsgBody(msgBody);
+				String body = readEmailBody("forgot_pwd_email_format.txt", user);
+				emailDetails.setMsgBody(body);
 				emailDetails.setSubject("Password of IES Account");
 				emailDetails.setToDetails(email);
-				emailRepository.save(emailDetails);
-				String sendSimpleMail = sendSimpleMail(emailDetails);
+				String sendSimpleMail = emailUtils.sendSimpleMail(emailDetails);
 				if (sendSimpleMail.equals("Success")) {
 					forgotPwdMsg = "Please check your email reset Password";
 				}
@@ -194,10 +161,10 @@ public class UserServiceImpl implements UserService {
 	}
 
 	// GenerateRandom Alphanumeric String
-	public String generateRandomPassword() {
+	private String generateRandomPassword() {
 		int leftLimit = 48; // numeral '0'
 		int rightLimit = 122; // letter 'z'
-		int targetStringLength = 10;
+		int targetStringLength = 6;
 		Random random = new Random();
 
 		String generatedString = random.ints(leftLimit, rightLimit + 1)
@@ -207,24 +174,25 @@ public class UserServiceImpl implements UserService {
 		return generatedString;
 	}
 
-	// To send a simple email
-	public String sendSimpleMail(EmailDetails emailDetails) {
+	private String readEmailBody(String fileName, User user) {
+		StringBuffer sb = new StringBuffer();
 
-		try {
-			SimpleMailMessage mailMessage = new SimpleMailMessage();
+		try (Stream<String> lines = Files.lines(Paths.get(fileName))) {
+			lines.forEach(line -> {
+				line = line.replace("${fname}", user.getFirstName());
+				line = line.replace("${lname}", user.getLastName());
+				line = line.replace("${temp_pwd}", user.getPassword());
+				line = line.replace("${email}", user.getEmail());
+				line = line.replace("${pwd}", user.getPassword());
+				sb.append(line);
 
-			mailMessage.setFrom(sender);
-			mailMessage.setTo(emailDetails.getToDetails());
-			mailMessage.setText(emailDetails.getMsgBody());
-			mailMessage.setSubject(emailDetails.getSubject());
-
-			javaMailSender.send(mailMessage);
-			return "Success";
+			});
+			lines.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
-		catch (Exception e) {
-			return "Failed";
-		}
+		return sb.toString();
 	}
 
 }

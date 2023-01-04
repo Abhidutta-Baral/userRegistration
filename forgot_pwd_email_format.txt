@@ -1,0 +1,13 @@
+Hi ${fname} ${lname}, <br/>
+<br/>
+Please find your password below.<br/>
+<br/>
+
+
+Passsword : ${pwd}<br/>
+<br/>
+
+
+
+Thanks,<br/>
+Abhidutta Baral.

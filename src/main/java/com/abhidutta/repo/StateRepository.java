@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.abhidutta.model.State;
 
 public interface StateRepository extends JpaRepository<State, Integer> {
-	List<State> findByCountryId(Integer countryId);
+	List<State> findByCountryId(String countryId);
 
 }
