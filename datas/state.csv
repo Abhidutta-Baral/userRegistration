@@ -1,0 +1,11 @@
+state_id,country_id,state_name
+1,1,Odisha
+2,1,"Andhra Pradesh"
+3,1,Telengana
+4,1,"West Bengal"
+5,1,Delhi
+6,1,Punjab
+7,2,California
+8,2,Florida
+9,2,Texas
+10,2,Alaska

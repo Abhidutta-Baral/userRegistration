@@ -1,0 +1,21 @@
+city_id,city_name,state_id
+1,Bhubaneswar,1
+2,Cuttack,1
+3,Vizag,2
+4,Vijawada,2
+5,Hyderabad,3
+6,Wrangal,3
+7,Kolkata,4
+8,Assamsole,4
+9,"Los Angeles",7
+10,"San Diego",7
+11,Jacksonville,8
+12,Miami,8
+13,Houston,9
+14,Dallas,9
+15,Anchorage,10
+16,Fairbanks,10
+17,"New Delhi",5
+18,Mandoli,5
+19,Ludhiana,6
+20,Amritsar,6
